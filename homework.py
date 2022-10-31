@@ -157,7 +157,7 @@ def main():
                          '(PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID')
         return 0
     bot = Bot(token=TELEGRAM_TOKEN)
-    current_timestamp = int(time.time(1660953600))
+    current_timestamp = int(time.time())
 
     while True:
         try:
