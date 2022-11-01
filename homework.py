@@ -23,7 +23,7 @@ ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
 
-HOMEWORK_STATUSES = {
+VERDICTS = {
     'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
     'reviewing': 'Работа взята на проверку ревьюером.',
     'rejected': 'Работа проверена: у ревьюера есть замечания.'
@@ -98,9 +98,8 @@ def check_response(response):
     доступный в ответе API по ключу 'homeworks'.
     """
     logging.debug('Проверка ответа сервера на корректность')
-    if 'error' in response:
-        if 'error' in response['error']:
-            raise logging.error(response['error']['error'])
+    if ('error' in response) and ('erorr' in response['error']):
+        raise logging.error(response['error']['error'])
 
     if 'code' in response:
         logging.info(response['message'])
@@ -122,16 +121,16 @@ def parse_status(homework):
     только один элемент из списка домашних работ. В случае
     успеха, функция возвращает подготовленную для отправки
     в Telegram строку, содержащую один из вердиктов словаря
-    HOMEWORK_STATUSES
+    VERDICTS
     """
     logging.debug('Извлекаю статус домашнего задания')
     homework_name = homework['homework_name']
     homework_status = homework['status']
 
-    if homework_status not in HOMEWORK_STATUSES:
+    if homework_status not in VERDICTS:
         logging.error('Недокументированный статус домашней работы')
 
-    verdict = HOMEWORK_STATUSES[homework_status]
+    verdict = VERDICTS[homework_status]
 
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
@@ -144,19 +143,19 @@ def check_tokens():
     Если отсутствует хотя бы одна переменная
     окружения — функция должна вернуть False, иначе — True.
     """
-    if (PRACTICUM_TOKEN is None
-            and TELEGRAM_CHAT_ID is None
-            and TELEGRAM_TOKEN is None):
-        return False
-    return True
+    if all([PRACTICUM_TOKEN, TELEGRAM_CHAT_ID, TELEGRAM_TOKEN]):
+        return True
+    return False
 
 
 def main():
     """Основная логика работы бота."""
+    logging.debug('Проверка переменных окружения')
     if not check_tokens():
         logging.critical('Проверьте переменные окружения '
                          '(PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID')
         return 0
+    logging.debug('Переменные окружения идентифицированы')
     bot = Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
 
@@ -172,9 +171,10 @@ def main():
             else:
                 logging.info('Задания не обнаружены')
             current_timestamp = response['current_date']
-            time.sleep(RETRY_TIME)
         except Exception as ex_error:
             logging.critical(f'Сбой в работе программы: {ex_error}')
+        finally:
+            time.sleep(RETRY_TIME)
 
 
 if __name__ == '__main__':
